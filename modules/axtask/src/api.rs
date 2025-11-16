@@ -196,7 +196,8 @@ pub fn exit(exit_code: i32) -> ! {
 pub fn run_idle() -> ! {
     loop {
         yield_now();
-        trace!("idle task: waiting for IRQs...");
+        warn!("idle task: waiting for IRQs...");
+        // trace!("idle task: waiting for IRQs...");
         #[cfg(feature = "irq")]
         axhal::asm::wait_for_irqs();
     }

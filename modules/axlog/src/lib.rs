@@ -76,7 +76,7 @@ macro_rules! ax_print {
 macro_rules! ax_println {
     () => { $crate::ax_print!("\n") };
     ($($arg:tt)*) => {
-        $crate::__print_impl(format_args!("{}\n", format_args!($($arg)*)));
+        $crate::__print_impl(format_args!("{}\r\n", format_args!($($arg)*)));
     }
 }
 
@@ -168,7 +168,7 @@ impl Log for Logger {
             if #[cfg(feature = "std")] {
                 __print_impl(with_color!(
                     ColorCode::White,
-                    "[{time} {path}:{line}] {args}\n",
+                    "[{time} {path}:{line}] {args}\r\n",
                     time = chrono::Local::now().format("%Y-%m-%d %H:%M:%S%.6f"),
                     path = path,
                     line = line,
@@ -183,7 +183,7 @@ impl Log for Logger {
                         // show CPU ID and task ID
                         __print_impl(with_color!(
                             ColorCode::White,
-                            "[{:>3}.{:06} {cpu_id}:{tid} {path}:{line}] {args}\n",
+                            "[{:>3}.{:06} {cpu_id}:{tid} {path}:{line}] {args}\r\n",
                             now.as_secs(),
                             now.subsec_micros(),
                             cpu_id = cpu_id,
@@ -196,7 +196,7 @@ impl Log for Logger {
                         // show CPU ID only
                         __print_impl(with_color!(
                             ColorCode::White,
-                            "[{:>3}.{:06} {cpu_id} {path}:{line}] {args}\n",
+                            "[{:>3}.{:06} {cpu_id} {path}:{line}] {args}\r\n",
                             now.as_secs(),
                             now.subsec_micros(),
                             cpu_id = cpu_id,
@@ -209,7 +209,7 @@ impl Log for Logger {
                     // neither CPU ID nor task ID is shown
                     __print_impl(with_color!(
                         ColorCode::White,
-                        "[{:>3}.{:06} {path}:{line}] {args}\n",
+                        "[{:>3}.{:06} {path}:{line}] {args}\r\n",
                         now.as_secs(),
                         now.subsec_micros(),
                         path = path,

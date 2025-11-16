@@ -60,13 +60,17 @@ pub fn block_on<F: IntoFuture>(f: F) -> F::Output {
     let waker = Waker::from(waker.clone());
     let mut cx = Context::from_waker(&waker);
 
+    // let start = axhal::time::wall_time();
+    // let id = curr.id_name();
     loop {
-        woke.store(false, Ordering::Release);
+        // woke.store(false, Ordering::Release);
         match fut.as_mut().poll(&mut cx) {
             Poll::Pending => {
                 if !woke.load(Ordering::Acquire) {
                     let mut rq = current_run_queue::<NoPreemptIrqSave>();
-                    rq.blocked_resched(|_| {});
+                    rq.blocked_resched(|_| {
+                        waker.wake_by_ref();
+                    });
                 } else {
                     // Immediately woken
                     crate::yield_now();

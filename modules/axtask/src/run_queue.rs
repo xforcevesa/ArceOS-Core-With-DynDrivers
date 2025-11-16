@@ -1,7 +1,11 @@
 #[cfg(feature = "smp")]
 use alloc::sync::Weak;
 use alloc::{collections::VecDeque, sync::Arc};
-use core::{mem::MaybeUninit, task::Poll};
+use core::{
+    mem::MaybeUninit,
+    sync::atomic::{AtomicBool, AtomicU64, Ordering},
+    task::Poll,
+};
 
 use axhal::percpu::this_cpu_id;
 use axsched::BaseScheduler;
@@ -243,7 +247,7 @@ impl<G: BaseGuard> AxRunQueueRef<'_, G> {
     ///
     /// This function is used to add a new task to the scheduler.
     pub fn add_task(&mut self, task: AxTaskRef) {
-        debug!(
+        warn!(
             "task add: {} on run_queue {}",
             task.id_name(),
             self.inner.cpu_id
@@ -258,6 +262,8 @@ impl<G: BaseGuard> AxRunQueueRef<'_, G> {
     /// which means the task is already unblocked by other cores.
     pub fn unblock_task(&mut self, task: AxTaskRef, resched: bool) {
         let task_id_name = task.id_name();
+        debug!("task unblock request: {}", task_id_name);
+
         // Try to change the state of the task from `Blocked` to `Ready`,
         // if successful, the task will be put into this run queue,
         // otherwise, the task is already unblocked by other cores.
@@ -270,7 +276,7 @@ impl<G: BaseGuard> AxRunQueueRef<'_, G> {
         {
             // Since now, the task to be unblocked is in the `Ready` state.
             let cpu_id = self.inner.cpu_id;
-            debug!("task unblock: {} on run_queue {}", task_id_name, cpu_id);
+            warn!("task unblock: {} on run_queue {}", task_id_name, cpu_id);
             // Note: when the task is unblocked on another CPU's run queue,
             // we just ingiore the `resched` flag.
             if resched && cpu_id == this_cpu_id() {
@@ -512,7 +518,8 @@ impl AxRunQueue {
             // TODO: priority
             #[cfg(feature = "smp")]
             task.set_cpu_id(self.cpu_id as _);
-            self.scheduler.lock().put_prev_task(task, preempt);
+            self.scheduler.lock().add_task(task);
+            // self.scheduler.lock().put_prev_task(task, preempt);
             true
         } else {
             false
@@ -540,6 +547,23 @@ impl AxRunQueue {
     }
 
     fn switch_to(&mut self, prev_task: CurrentTask, next_task: AxTaskRef) {
+        static COUNT: AtomicU64 = AtomicU64::new(0);
+        static WARNED: AtomicU64 = AtomicU64::new(0);
+        static PRINT: AtomicBool = AtomicBool::new(false);
+        let count = COUNT.fetch_add(1, core::sync::atomic::Ordering::Relaxed);
+        if count % 100000 == 0 {
+            // warn!("-----");
+            PRINT.store(true, Ordering::Relaxed);
+        }
+        if PRINT.load(Ordering::Relaxed) && WARNED.load(Ordering::Relaxed) != count {
+            let c = WARNED.fetch_add(1, Ordering::Relaxed);
+            if c > 10 {
+                PRINT.store(false, Ordering::Relaxed);
+                WARNED.store(0, Ordering::Relaxed);
+            }
+            // warn!("{} => {}", prev_task.id_name(), next_task.id_name());
+        }
+
         // Make sure that IRQs are disabled by kernel guard or other means.
         #[cfg(all(not(test), feature = "irq"))] // Note: irq is faked under unit tests.
         assert!(

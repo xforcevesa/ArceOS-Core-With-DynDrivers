@@ -22,6 +22,9 @@
 #[macro_use]
 extern crate axlog;
 
+#[cfg(feature = "driver-dyn")]
+extern crate axklib_impl;
+
 #[cfg(all(target_os = "none", not(test)))]
 mod lang_items;
 
@@ -184,6 +187,9 @@ pub fn rust_main(cpu_id: usize, arg: usize) -> ! {
     #[cfg(feature = "paging")]
     axmm::init_memory_management();
 
+    #[cfg(feature = "driver-dyn")]
+    axdriver::setup(arg);
+
     info!("Initialize platform devices...");
     axhal::init_later(cpu_id, arg);
 
@@ -262,24 +268,64 @@ fn init_allocator() {
     info!("Initialize global memory allocator...");
     info!("  use {} allocator.", axalloc::global_allocator().name());
 
+    const MAX_PADDR: usize = 0x1_0000_0000;
+
     let mut max_region_size = 0;
-    let mut max_region_paddr = 0.into();
+    let mut max_region_paddr = None;
+    let mut use_next_free = false;
+
     for r in memory_regions() {
-        if r.flags.contains(MemRegionFlags::FREE) && r.size > max_region_size {
-            max_region_size = r.size;
-            max_region_paddr = r.paddr;
+        if r.name == ".bss" {
+            use_next_free = true;
+        } else if r.flags.contains(MemRegionFlags::FREE) {
+            if r.paddr.as_usize() >= MAX_PADDR {
+                continue;
+            }
+            
+            if use_next_free {
+                max_region_paddr = Some(r.paddr);
+                break;
+            } else if r.size > max_region_size {
+                max_region_size = r.size;
+                max_region_paddr = Some(r.paddr);
+            }
         }
     }
-    for r in memory_regions() {
-        if r.flags.contains(MemRegionFlags::FREE) && r.paddr == max_region_paddr {
-            axalloc::global_init(phys_to_virt(r.paddr).as_usize(), r.size);
-            break;
+
+    if let Some(paddr) = max_region_paddr {
+        for r in memory_regions() {
+            if r.flags.contains(MemRegionFlags::FREE) && r.paddr == paddr {
+                let usable_size = if r.paddr.as_usize() + r.size > MAX_PADDR {
+                    MAX_PADDR - r.paddr.as_usize()
+                } else {
+                    r.size
+                };
+                
+                info!("  Initialize heap at [PA:{:#x}, PA:{:#x}), size: {} MB", 
+                      r.paddr.as_usize(), r.paddr.as_usize() + usable_size, 
+                      usable_size / 1024 / 1024);
+                axalloc::global_init(phys_to_virt(r.paddr).as_usize(), usable_size);
+                break;
+            }
         }
-    }
-    for r in memory_regions() {
-        if r.flags.contains(MemRegionFlags::FREE) && r.paddr != max_region_paddr {
-            axalloc::global_add_memory(phys_to_virt(r.paddr).as_usize(), r.size)
-                .expect("add heap memory region failed");
+
+        for r in memory_regions() {
+            if r.flags.contains(MemRegionFlags::FREE) 
+                && r.paddr != paddr 
+                && r.paddr.as_usize() < MAX_PADDR {
+
+                let usable_size = if r.paddr.as_usize() + r.size > MAX_PADDR {
+                    MAX_PADDR - r.paddr.as_usize()
+                } else {
+                    r.size
+                };
+                
+                info!("  Add heap region [PA:{:#x}, PA:{:#x}), size: {} MB",
+                      r.paddr.as_usize(), r.paddr.as_usize() + usable_size,
+                      usable_size / 1024 / 1024);
+                axalloc::global_add_memory(phys_to_virt(r.paddr).as_usize(), usable_size)
+                    .expect("add heap memory region failed");
+            }
         }
     }
 }
