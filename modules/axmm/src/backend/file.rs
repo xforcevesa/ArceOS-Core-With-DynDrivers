@@ -72,7 +72,7 @@ impl FileBackendInner {
         }
 
         let pt = aspace.page_table_mut();
-        match pt.to_mut().unmap(vaddr) {
+        match pt.modify().unmap(vaddr) {
             Ok(_) | Err(PagingError::NotMapped) => {}
             Err(err) => {
                 warn!("Failed to unmap page {:?}: {:?}", vaddr, err);
