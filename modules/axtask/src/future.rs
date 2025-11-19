@@ -66,7 +66,9 @@ pub fn block_on<F: IntoFuture>(f: F) -> F::Output {
             Poll::Pending => {
                 if !woke.load(Ordering::Acquire) {
                     let mut rq = current_run_queue::<NoPreemptIrqSave>();
-                    rq.blocked_resched(|_| {});
+                    rq.blocked_resched(|_| {
+                        waker.wake_by_ref();
+                    });
                 } else {
                     // Immediately woken
                     crate::yield_now();

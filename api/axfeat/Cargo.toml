@@ -31,6 +31,7 @@ alloc = ["axalloc", "axruntime/alloc"]
 alloc-tlsf = ["axalloc/tlsf"]
 alloc-slab = ["axalloc/slab"]
 alloc-buddy = ["axalloc/buddy"]
+alloc-level-1 = ["axalloc/level-1", "alloc"]
 page-alloc-64g = ["axalloc/page-alloc-64g"] # up to 64G memory capacity
 page-alloc-4g = ["axalloc/page-alloc-4g"] # up to 4G memory capacity
 paging = ["alloc", "axhal/paging", "axruntime/paging"]
@@ -65,6 +66,7 @@ input = ["alloc", "paging", "dep:axdisplay", "axruntime/input"]
 rtc = ["axhal/rtc", "axruntime/rtc"]
 
 # Device drivers
+driver-dyn = ["axruntime/driver-dyn","axdriver?/dyn", "dep:axklib-impl"]
 bus-mmio = ["axdriver?/bus-mmio"]
 bus-pci = ["axdriver?/bus-pci"]
 driver-virtio-blk = ["axdriver/virtio-blk"]
@@ -102,5 +104,7 @@ axruntime = { workspace = true }
 axsync = { workspace = true, optional = true }
 axtask = { workspace = true, optional = true }
 axipi = { workspace = true, optional = true }
+
+axklib-impl = { workspace = true, optional = true }
 
 kspin = { workspace = true, optional = true }

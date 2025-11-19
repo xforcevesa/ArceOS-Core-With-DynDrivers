@@ -540,6 +540,23 @@ impl AxRunQueue {
     }
 
     fn switch_to(&mut self, prev_task: CurrentTask, next_task: AxTaskRef) {
+        static COUNT: AtomicU64 = AtomicU64::new(0);
+        static WARNED: AtomicU64 = AtomicU64::new(0);
+        static PRINT: AtomicBool = AtomicBool::new(false);
+        let count = COUNT.fetch_add(1, core::sync::atomic::Ordering::Relaxed);
+        if count % 100000 == 0 {
+            // warn!("-----");
+            PRINT.store(true, Ordering::Relaxed);
+        }
+        if PRINT.load(Ordering::Relaxed) && WARNED.load(Ordering::Relaxed) != count {
+            let c = WARNED.fetch_add(1, Ordering::Relaxed);
+            if c > 10 {
+                PRINT.store(false, Ordering::Relaxed);
+                WARNED.store(0, Ordering::Relaxed);
+            }
+            // warn!("{} => {}", prev_task.id_name(), next_task.id_name());
+        }
+
         // Make sure that IRQs are disabled by kernel guard or other means.
         #[cfg(all(not(test), feature = "irq"))] // Note: irq is faked under unit tests.
         assert!(

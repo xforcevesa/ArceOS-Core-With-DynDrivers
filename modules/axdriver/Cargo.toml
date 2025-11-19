@@ -13,7 +13,6 @@ repository = "https://github.com/arceos-org/arceos/tree/main/modules/axdriver"
 documentation = "https://arceos-org.github.io/arceos/axdriver/index.html"
 
 [features]
-dyn = []
 bus-mmio = []
 bus-pci = ["dep:axdriver_pci", "dep:axhal", "dep:axconfig"]
 block = ["axdriver_block"]
@@ -21,6 +20,18 @@ display = ["axdriver_display"]
 input = ["axdriver_input"]
 net = ["axdriver_net"]
 vsock = ["axdriver_vsock"]
+
+dyn = [
+  "dep:rdrive",
+  "dep:arm-gic-driver",
+  "arm-gic-driver?/rdif",
+  "dep:rdif-intc",
+  "dep:rdif-block",
+  "dep:dma-api",
+  "dep:axklib",
+  "axdriver_block",
+  "axdriver_block/gpt",
+]
 
 # Enabled by features `virtio-*`
 virtio = ["axdriver_virtio", "dep:axalloc", "dep:axhal", "dep:axconfig"]
@@ -50,6 +61,8 @@ axconfig = { workspace = true, optional = true }
 axdma = { workspace = true, optional = true }
 axhal = { workspace = true, optional = true }
 
+axklib = {workspace = true, optional = true}
+
 axdriver_base = { git = "https://github.com/Starry-OS/axdriver_crates.git", rev = "a263470" }
 axdriver_block = { git = "https://github.com/Starry-OS/axdriver_crates.git", rev = "a263470", optional = true }
 axdriver_display = { git = "https://github.com/Starry-OS/axdriver_crates.git", rev = "a263470", optional = true }
@@ -62,3 +75,20 @@ axdriver_virtio = { git = "https://github.com/Starry-OS/axdriver_crates.git", re
 cfg-if = { workspace = true }
 crate_interface = { workspace = true }
 log = { workspace = true }
+
+gpt_disk_io = "0.16.2"
+
+axerrno = {workspace = true}
+
+dma-api = {version = "0.5", features = ["alloc"], optional = true}
+lazyinit = "0.2"
+
+memory_addr = "0.4"
+rdif-block = {version = "0.6.2", optional = true}
+rdif-intc = {version = "0.12", optional = true}
+rdrive = {version = "0.18", optional = true}
+spin = "0.10"
+
+[target.'cfg(target_arch = "aarch64")'.dependencies]
+arm-gic-driver = {version = "0.15", optional = true}
+

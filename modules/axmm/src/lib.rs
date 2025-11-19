@@ -95,3 +95,26 @@ pub fn init_memory_management_secondary() {
     // flush all TLB
     axhal::asm::flush_tlb(None);
 }
+
+
+/// Maps a physical memory region to virtual address space for device access.
+pub fn iomap(addr: PhysAddr, size: usize) -> Result<VirtAddr, AxError> {
+    let virt = phys_to_virt(addr);
+
+    let virt_aligned = virt.align_down_4k();
+    let addr_aligned = addr.align_down_4k();
+    let size_aligned = (addr + size).align_up_4k() - addr_aligned;
+
+    let flags = MappingFlags::DEVICE | MappingFlags::READ | MappingFlags::WRITE;
+    let mut tb = kernel_aspace().lock();
+    match tb.map_linear(virt_aligned, addr_aligned, size_aligned, flags) {
+        Err(AxError::AlreadyExists) => {}
+        Err(e) => {
+            return Err(e);
+        }
+        Ok(_) => {}
+    }
+    // flush TLB
+    tb.protect(virt_aligned, size_aligned, flags)?;
+    Ok(virt)
+}
