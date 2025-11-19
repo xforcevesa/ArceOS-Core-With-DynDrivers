@@ -17,7 +17,7 @@ impl Block {
     pub fn is_gpt_partition(&mut self) -> bool {
         let mut disk = match Disk::new(BlockDriverAdapter(self)) {
             Ok(d) => d,
-            Err(e) => {
+            Err(_) => {
                 return false;
             }
         };

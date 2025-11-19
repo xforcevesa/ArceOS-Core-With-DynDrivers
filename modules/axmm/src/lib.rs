@@ -11,14 +11,14 @@ mod aspace;
 pub mod backend;
 mod page_iter;
 
-use axerrno::LinuxResult;
+use axerrno::{AxError, LinuxResult};
 use axhal::{
     mem::{MemRegionFlags, phys_to_virt},
     paging::MappingFlags,
 };
 use kspin::SpinNoIrq;
 use lazyinit::LazyInit;
-use memory_addr::{MemoryAddr, PhysAddr, va};
+use memory_addr::{MemoryAddr, PhysAddr, VirtAddr, va};
 
 pub use self::aspace::AddrSpace;
 

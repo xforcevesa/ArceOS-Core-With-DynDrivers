@@ -67,7 +67,7 @@ axcpu = "0.2"
 axerrno = "0.1"
 axfs-ng-vfs = "0.1"
 axio = "0.1"
-axplat = "0.2"
+axplat = { git = "https://github.com/Starry-OS/axplat_crates" }
 axpoll = "0.1"
 bindgen = "0.72"
 cfg-if = "1.0"

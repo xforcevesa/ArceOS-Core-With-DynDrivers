@@ -34,7 +34,7 @@ mod mp;
 #[cfg(feature = "smp")]
 pub use self::mp::rust_main_secondary;
 
-#[not(cfg(feature = "driver-dyn"))]
+#[cfg(not(feature = "driver-dyn"))]
 const LOGO: &str = r#"
        d8888                            .d88888b.   .d8888b.
       d88888                           d88P" "Y88b d88P  Y88b

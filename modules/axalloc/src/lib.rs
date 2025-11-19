@@ -20,7 +20,7 @@ use core::{
     ptr::NonNull,
 };
 
-#[cfg(not(feature = "level-1"))]
+#[allow(unused)]
 use allocator::{AllocResult, BitmapPageAllocator, BaseAllocator, ByteAllocator, PageAllocator};
 use kspin::SpinNoIrq;
 

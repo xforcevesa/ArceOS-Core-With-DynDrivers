@@ -3,6 +3,8 @@ use alloc::boxed::Box;
 #[allow(unused_imports)]
 use crate::prelude::*;
 
+use alloc::vec::Vec;
+
 /// The unified type of the NIC devices.
 #[cfg(feature = "net")]
 pub type AxNetDevice = Box<dyn NetDriverOps>;
